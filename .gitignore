@@ -1,0 +1,9 @@
+# Entorno de Hadoop
+hadoop/apache-hive-3.1.2-bin.tar.gz
+hadoop/hadoop-3.3.1.tar.gz
+hadoop/livy-0.4.0-incubating-bin.zip
+hadoop/mysql-connector-java-8.0.15.jar
+hadoop/spark-2.1.0-bin-without-hadoop.tgz
+# Entorno de Jupyter 
+jupyter/hadoop-common-3.3.1.jar
+jupyter/hive-jdbc-3.1.2-standalone.jar

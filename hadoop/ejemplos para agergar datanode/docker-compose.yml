@@ -1,0 +1,206 @@
+# IMPORTANTE - LEER
+# **** Utilizar herramienta de buscar y reeemplazar lo que se menciona a continuacion
+# Cambiar sufijo  en todo el documento (para crear un ambiente diferente)
+# Cambiar nombre de imagen de laboratorio por la que hayas construido tu prueba-documentacion-lab
+# Cambiar nombre de imagen de laboratorio por la que hayas construido tu prueba-documentacion-hadoop
+
+# ***************
+# Ubica en este documento la palabra "ports" y cambia el primer valor de las parejas de puertos
+# para mapear dicho puerto a la maquina host. Ejemplo, si quieres que el puerto 8009 este expuesto
+# para el servicio de hue, tendras que posicionarte en el ports de hue y cambiar - 8007:8888 por
+# - 8009:8888
+# En caso de que no quieras puertos expuestos, entonces solo comenta las lineas relacionadas a los
+# Puertos de cada servicio con #. Ejemplo:
+# #ports:
+#   #- 8009:8888
+
+# Por ultimo cambia los volumnes que quieres que compartan los contenedores con el host
+
+
+version: "3"
+
+services:
+
+  jupyterhub:
+    image: prueba-documentacion-lab
+    container_name: jupyterhub
+    restart: always
+    ports:
+      - 8001:8000
+
+  namenode:
+    image: prueba-documentacion-hadoop
+    container_name: namenode
+    restart: always
+    expose:
+      - 9870
+      - 9000
+      - 8042
+    ports:
+      - 8006:8088
+    #volumes:
+      # metadatos del hdfs 
+    #  - /data:/data/
+      # Tablas 
+      #- /INTELIGENCIACYC/CLOUDERA:/tablaShared/
+      # Tabla compartida por todos los contenedores Hadoop
+      #- /INTELIGENCIACYC/CLOUDERA/2021/cd_cte_datos_contacto_master/:/home/hadoop/contactom/
+      #- /INTELIGENCIACYC/CLOUDERA/TABLES/:/home/hadoop/TABLES/
+    environment:
+      - CLUSTER_NAME=baz_lab
+    hostname: namenode
+    depends_on:
+      - datanode
+      - datanode2
+      - datanode3
+      - datanode4
+#################################################################
+#                   EMPIEZA SECCION DE DATANODES                #
+#################################################################
+  datanode:
+    image: prueba-documentacion-hadoop
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
+        limits:
+          cpus: "1.0"
+    container_name: datanode
+    restart: always
+    #volumes:
+      # Datos del hdfs
+      #- /data:/data/
+      # Tabla compartida por todos los contenedores Hadoop
+      #- /INTELIGENCIACYC/CLOUDERA/2021/cd_cte_datos_contacto_master/:/home/hadoop/contactom/
+      #- /INTELIGENCIACYC/CLOUDERA/TABLES/:/home/hadoop/TABLES/
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    hostname: datanode
+    expose:
+      - 8042
+
+  datanode2:
+    image: prueba-documentacion-hadoop
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
+        limits:
+          cpus: "1.0"
+    container_name: datanode2
+    restart: always
+    #volumes:
+      # Datos del hdfs
+      #- /data2:/data/
+      # Tabla compartida por todos los contenedores Hadoop
+      #- /INTELIGENCIACYC/CLOUDERA/2021/cd_cte_datos_contacto_master/:/home/hadoop/contactom/
+      #- /INTELIGENCIACYC/CLOUDERA/TABLES/:/home/hadoop/TABLES/
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    hostname: datanode2
+    expose:
+      - 8042
+
+  datanode3:
+    image: prueba-documentacion-hadoop
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
+        limits:
+          cpus: "1.0"
+    container_name: datanode3
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    hostname: datanode3
+    expose:
+      - 8042
+
+  datanode4:
+    image: prueba-documentacion-hadoop
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.5"
+        limits:
+          cpus: "1.0"
+    container_name: datanode4
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    hostname: datanode4
+    expose:
+      - 8042
+#################################################################
+#                   TERMINA SECCION DE DATANODES                #
+#################################################################
+  metastore:
+    image: mysql
+    container_name: metastore
+    restart: always
+    environment:
+      # Users and passwords
+      MYSQL_ROOT_PASSWORD: "MysqlRootTmpPasswd"
+      MYSQL_USER: hive
+      MYSQL_PASSWORD: "MysqlHiveTmpPasswd"
+    hostname: metastore
+    expose:
+      - 3306
+    #volumes:
+      # Bases de datos MYSQL
+      #- /metastore:/var/lib/mysql:rw
+    depends_on:
+      - namenode
+
+  hiveServer:
+    image: prueba-documentacion-hadoop
+    container_name: hiveServer
+    hostname: hiveServer
+    restart: always
+    depends_on:
+      - metastore
+    expose:
+      - 10000
+      - 10001
+      - 10002
+    #volumes:
+      # Tabla compartida por todos los contenedores Hadoop
+      #- /INTELIGENCIACYC/CLOUDERA/2021/cd_cte_datos_contacto_master/:/home/hadoop/contactom/
+      #- /INTELIGENCIACYC/CLOUDERA/TABLES/:/home/hadoop/TABLES/
+
+  mysql:
+    image: mysql
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "MysqlRootTmpPasswd"
+      MYSQL_DATABASE: metadatahue
+    hostname: mysql_general
+    expose:
+      - 3306
+    #volumes:
+      # Bases de datos
+      #- /mysql_general:/var/lib/mysql:rw
+    # PASWD MYSQL deep dive d33pd1v3MySQL
+
+  hue:
+    image: gethue/hue
+    deploy:
+      resources:
+        reservations:
+          cpus: "0.2"
+        limits:
+          cpus: "0.5"
+    container_name: hue
+    hostname: hue-server
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - 8007:8888
+    volumes:
+    # El archivo hue.ini tiene todas las configuraciones de hue
+      - ./hadoop/hue.ini:/usr/share/hue/desktop/conf/hue.ini
+  #huesuperuser:@huesuperuser123*
+
